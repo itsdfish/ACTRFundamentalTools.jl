@@ -1,6 +1,8 @@
-using ACTRFundamentalTools
-using Test
+cd(@__DIR__)
 
-@testset "ACTRFundamentalTools.jl" begin
-    # Write your tests here.
+tests = readdir()
+filter!(x -> x != "runtests.jl", tests)
+
+res = map(tests) do t
+    include(t)
 end
