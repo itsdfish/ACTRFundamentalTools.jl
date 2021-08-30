@@ -19,13 +19,13 @@ using SafeTestsets
     data = map(s -> simulate(parms, s, n_reps; blc, δ), stimuli)
 
     x = range(.8*blc, 1.2*blc, length=100)
-    y = map(x->loglike(x, δ, parms, data), x)
+    y = map(x->loglike(data, parms, x, δ), x)
     mxv,mxi = findmax(y)
     blc′ = x[mxi]
     @test blc′≈ blc rtol=.02
 
     x = range(.8*δ, 1.2*δ, length=100)
-    y = map(x->loglike(blc, x, parms, data), x)
+    y = map(x->loglike(data, parms, blc, x), x)
     mxv,mxi = findmax(y)
     δ′ = x[mxi]
     @test δ′ ≈ δ rtol=.02

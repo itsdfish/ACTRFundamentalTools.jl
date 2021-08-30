@@ -55,7 +55,8 @@ function simulate(parms, stimulus, n_reps; blc)
     # generate declarative memory object
     memory = Declarative(;memory=chunks)
     # generate ACTR object
-    actr = ACTR(;declarative=memory, parms..., blc=blc)
+    actr = ACTR(;declarative=memory, parms..., blc)
+    # the number of correct responses
     k = 0
     # count the number of correct answers, k
     for rep in 1:n_reps
@@ -171,7 +172,6 @@ function computeLL(parms, data; blc)
     end
     return LL
 end
-
 
 function probability_yes(tmat, s0, d)
     z = s0' * tmat^3; θ = z[4]

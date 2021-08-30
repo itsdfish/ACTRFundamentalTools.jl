@@ -1,7 +1,7 @@
 cd(@__DIR__)
 using Pkg
 Pkg.activate("../..")
-using Revise, Distributions, Plots, FFTDist, Plots.Measures, Random
+using Revise, Distributions, Plots, FFTDists, Plots.Measures, Random
 Random.seed!(5505)
 ###########################################################################
 ###############################  Define Models  ###########################

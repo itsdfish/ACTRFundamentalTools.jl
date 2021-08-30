@@ -10,10 +10,10 @@ using SafeTestsets
     δ = 16.0
     τ = -.3
     s = .5
-    parms = (mmp = true,noise = true,mmpFun = simFun,ter = 2.05)
+    parms = (mmp = true,noise = true,mmp_fun = sim_fun,ter = 2.05)
     stimuli = [(num1 = 1,num2 = 1),(num1 = 1,num2 = 2),(num1 = 1,num2 = 3),(num1 = 2,num2 = 2),
         (num1 = 2,num2 = 3),(num1 = 3,num2 = 3)]
-    temp = map(x -> simulate(stimuli, parms; δ=δ, τ=τ, s=s), 1:500)
+    temp = map(x -> simulate(stimuli, parms; δ, τ, s), 1:500)
     data = vcat(vcat(temp...)...)
 
     x = range(δ * .8, δ * 1.2, length=50)

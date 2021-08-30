@@ -10,7 +10,9 @@ Random.seed!(354301)
 #######################################################################################
 #                                   Generate Data
 #######################################################################################
+# true blc value
 blc = 1.0
+# fixed parameters
 parms = (noise = true, τ = 0.0, s = .2, mmp = true, δ = 1.0)
 stimuli = get_stimuli()
 n_reps = 10
@@ -35,8 +37,9 @@ chain = sample(model(data, parms), specs, MCMCThreads(), n_samples, n_chains, pr
 #                                      Plot Chains
 #######################################################################################
 pyplot()
-posteriors = plot(chain, seriestype=:density, grid=false, titlefont=font(10),
+posteriors = plot(chain, seriestype=:density, grid=false, title="",
     size=(300,175), xaxis=font(8), yaxis=font(8))
+plot!(xlabel="blc")
 #######################################################################################
 #                                  Posterior Predictive
 #######################################################################################

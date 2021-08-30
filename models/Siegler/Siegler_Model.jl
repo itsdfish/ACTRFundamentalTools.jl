@@ -18,28 +18,37 @@ function logpdf(d::Siegler, data::Array{<:NamedTuple,1})
 end
 
 function simulate(stimuli, parms; args...)
+    # populate chunks
     chunks = populate_memory()
+    # set the base level constant based on sum slot
     set_baselevels!(chunks)
+    # create a declarative memory object
     memory = Declarative(;memory=chunks)
+    # create an ACTR model object
     actr = ACTR(;declarative=memory, parms..., args...)
     shuffle!(stimuli)
     N = length(stimuli)
     data = Array{NamedTuple,1}(undef, N)
+    # loop through trials
     for (i,s) in enumerate(stimuli)
+        # retrieve a chunk based on retrieval request s
         chunk = retrieve(actr; s...)
+        # compute reaction time 
         rt = compute_RT(actr, chunk) + parms.ter
         if isempty(chunk)
+            # retrieval failure
             data[i] = (s...,resp = -100,rt = rt)
         else
+            # chunk retrieved. 
             data[i] = (s...,resp = chunk[1].slots.sum,rt = rt)
         end
     end
     return data
 end
 
-function simFun(memory, chunk; request...)
+function sim_fun(actr, chunk; request...)
     slots = chunk.slots
-    p = 0.0; δ = memory.parms.δ
+    p = 0.0; δ = actr.parms.δ
     for (c,v) in request
         p += .1 * δ * abs(slots[c] - v)
     end
@@ -57,7 +66,7 @@ end
 function set_baselevels!(chunks)
     for chunk in chunks
         if chunk.slots.sum < 5
-            chunk.bl = .65
+            chunk.bl = 0.65
         end
     end
     return nothing
@@ -65,39 +74,50 @@ end
 
 function computeLL(parms, data; δ, τ, s)
     type = typeof(δ)
-    chunks = populate_memory(zero(type))
+    # populate chunks
+    chunks = populate_memory(zero(δ))
+    # set base level constant based on sum slot
     set_baselevels!(chunks)
+    # create declarative memory object
     memory = Declarative(;memory=chunks)
+    # create ACTR model object
     actr = ACTR(;declarative=memory, parms..., δ, τ, s)
+    # remove random values from activation
     actr.parms.noise = false
     N = length(chunks) + 1
     @unpack s,ter,τ = actr.parms
     LL = 0.0; idx = 0; μ = Array{type,1}(undef, N)
     σ = s * pi / sqrt(3)
-    ϕ = fill(ter, N)
-    # retrieval failure case does not have a harvest production
-    ϕ[end] -= .05
+    ϕ = ter
     for (num1,num2,resp,rt) in data
-        compute_activation!(actr; num1=num1, num2=num2)
+        # compute activation
+        compute_activation!(actr; num1, num2)
+        # extract mean activation values
         map!(x -> x.act, μ, chunks)
+        # last mean activation is for retrieval failure
         μ[end] = τ
+        # log normal race distribution 
         dist = LNR(;μ=-μ, σ, ϕ)
-        if resp != -100 # no retrieval error
-            matching = get_chunks(actr; sum=resp)
-            log_probs = zeros(type, length(matching))
-            for (c,chunk) in enumerate(matching)
-                idx = find_index(actr; chunk.slots...)
+        # no retrieval error
+        if resp != -100 
+            # get all chunk indices such that sum = response
+            indices = find_indices(actr; sum=resp)
+            log_probs = zeros(type, length(indices))
+            # loop over each component of mixture and compute log likelihood
+            for (c,idx) in enumerate(indices)
                 log_probs[c] = logpdf(dist, idx, rt)
             end
+            # compute marginal likelihood
             LL += logsumexp(log_probs)
         else
+            # retrieval failure 
             LL += logpdf(dist, N, rt)
         end
     end
     return LL
 end
 
-function rt_histogram(df, stimuli)
+function rt_histogram(df, stimuli; kwargs...)
     vals = NamedTuple[]
     for (num1,num2) in stimuli
         idx = @. ((df[:,:num1] == num1 ) & (df[:,:num2] == num2)) | ((df[:,:num1] == num2) & (df[:,:num2] == num1))
@@ -109,15 +129,15 @@ function rt_histogram(df, stimuli)
         push!(vals, (title = str, data = rt_resp))
     end
     p = bar(layout=(2,3), leg=false, xlims=(0,10), xlabel="Response", ylabel="Mean RT",
-        size=(300,300), xaxis=font(7), yaxis=font(7), titlefont=font(6), grid=false)
+        size=(600,600), xaxis=font(6), yaxis=font(6), titlefont=font(7), grid=false; kwargs...)
     for (i,v) in enumerate(vals)
         @df v.data bar!(p, :resp, :rt_mean, subplot=i, title=v.title, bar_width=1, color=:grey,
-            grid=false, ylims=(0,5.5), xlims=(-.5,9))
+            grid=false, ylims=(0,4.5), xlims=(-.5,9))
     end
     return p
 end
 
-function response_histogram(df, stimuli)
+function response_histogram(df, stimuli; kwargs...)
     vals = NamedTuple[]
     for (num1,num2) in stimuli
         idx = @. ((df[:,:num1] == num1 ) & (df[:,:num2] == num2)) | ((df[:,:num1] == num2) & (df[:,:num2] == num1))
@@ -127,7 +147,7 @@ function response_histogram(df, stimuli)
         push!(vals, (title = str, data = v))
     end
     p = histogram(layout=(2,3), leg=false, xlims=(0,10), xlabel="Response",ylabel="Proportion",
-        size=(300,300), xaxis=font(7), yaxis=font(6), titlefont=font(6), grid=false)
+        size=(600,600), xaxis=font(6), yaxis=font(6), titlefont=font(7), grid=false; kwargs...)
     for (i,v) in enumerate(vals)
         histogram!(p, v.data, subplot=i, title=v.title, bar_width=1, color=:grey, grid=false,
         normalize=:probability, ylims=(0,1))

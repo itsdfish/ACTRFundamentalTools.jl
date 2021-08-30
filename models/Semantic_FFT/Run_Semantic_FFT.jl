@@ -8,13 +8,13 @@ using Revise, StatsPlots, ACTRModels, Distributions, FFTDists, DifferentialEvolu
 include("Semantic_FFT_Model.jl")
 include("model_functions.jl")
 include("../../utilities/plotting.jl")
-Random.seed!(371401)
+Random.seed!(373401)
 #######################################################################################
 #                                   Generate Data
 #######################################################################################
 blc = 1.5
 δ = 1.0
-parms = (noise = true, τ = 0.0, s = .2, mmp = true)
+parms = (noise = true, τ = 0.0, s = 0.2, mmp = true)
 stimuli = get_stimuli()
 n_reps = 10
 data = map(s -> simulate(parms, s, n_reps; blc, δ), stimuli)
@@ -29,20 +29,22 @@ bounds = ((-Inf,Inf),(eps(),Inf))
 #######################################################################################
 #                                 Estimate Parameters
 #######################################################################################
-model = DEModel(parms, priors=priors, model=loglike, data=data)
-de = DE(bounds=bounds, burnin=1000, priors=priors, n_groups=2, Np=4)
+model = DEModel(parms; priors, model=loglike, data)
+de = DE(;bounds, burnin=1000, priors, n_groups=2, Np=4)
 n_iter = 2000
-@elapsed chains = sample(model, de, MCMCThreads(), n_iter, progress=true)
+chains = sample(model, de, MCMCThreads(), n_iter, progress=true)
 #######################################################################################
-#                                      Summarize
+#                                  Posterior Correlations
 #######################################################################################
-println(chains)
+cors = cor(chains)
 #######################################################################################
 #                                         Plot
 #######################################################################################
 pyplot()
 posteriors = plot(chains, seriestype=:pooleddensity, grid=false, titlefont=font(10),
      xaxis=font(8), yaxis=font(8), color=:grey, size=(300,250))
+plot!(title = "", xlabel = "blc", subplot = 1)
+plot!(title = "", xlabel = "δ", subplot = 2)
 #######################################################################################
 #                                  Posterior Predictive
 #######################################################################################
