@@ -49,7 +49,7 @@ SafeTestsets = "v0.0.1"
 StatsBase = "v0.33.0"
 StatsFuns = "v0.9.6"
 StatsPlots = "v0.14.6"
-Turing = "v0.18.0"
+Turing = "v0.18.0, 0.19"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
